@@ -528,6 +528,9 @@ SSL *SSL_new(SSL_CTX *ctx) {
     return nullptr;
   }
 
+  // breq: 传递 SCSV 开关
+  ssl->config->send_renegotiation_scsv = ctx_impl->send_renegotiation_scsv;
+
   if (ctx_impl->requested_trust_anchors) {
     ssl->config->requested_trust_anchors.emplace();
     if (!ssl->config->requested_trust_anchors->CopyFrom(
@@ -1873,7 +1876,23 @@ static bool check_no_duplicates(Span<const uint16_t> list, int reason) {
 
 static bool check_group_ids(Span<const uint16_t> group_ids) {
   for (uint16_t group_id : group_ids) {
-    if (ssl_group_id_to_nid(group_id) == NID_undef) {
+    // breq: 原来是 `ssl_group_id_to_nid(group_id) == NID_undef` 就拒绝。
+    // 但占位 group（如 X448=30）在 kNamedGroups 里没有对应的 NID
+    // （BoringSSL 没实现该曲线），NID 只能是 NID_undef —— 会被这里挡住。
+    //
+    // 改成"能在 kNamedGroups 里找到就接受"：
+    //   - 原生 group 有 NID，行为不变
+    //   - 占位 group 只是被允许写进 supported_groups（ClientHello 会带上）
+    //   - 服务端真选中它时走 SSLKeyShare::Create 的 default 分支 -> nullptr
+    //     -> 握手失败，不会用错曲线
+    bool known = false;
+    for (const auto &g : NamedGroups()) {
+      if (g.group_id == group_id) {
+        known = true;
+        break;
+      }
+    }
+    if (!known) {
       OPENSSL_PUT_ERROR(SSL, SSL_R_UNSUPPORTED_ELLIPTIC_CURVE);
       return false;
     }
@@ -2490,6 +2509,17 @@ int SSL_CTX_set_alpn_protos(SSL_CTX *ctx, const uint8_t *protos,
     return 1;
   }
   return FromOpaque(ctx)->alpn_client_proto_list.CopyFrom(span) ? 0 : 1;
+}
+
+void SSL_CTX_set_send_renegotiation_scsv(SSL_CTX *ctx, int enable) {
+  FromOpaque(ctx)->send_renegotiation_scsv = enable != 0;
+}
+
+void SSL_set_send_renegotiation_scsv(SSL *ssl, int enable) {
+  auto *ssl_impl = FromOpaque(ssl);
+  if (ssl_impl->config) {
+    ssl_impl->config->send_renegotiation_scsv = enable != 0;
+  }
 }
 
 int SSL_set_alpn_protos(SSL *ssl, const uint8_t *protos, size_t protos_len) {

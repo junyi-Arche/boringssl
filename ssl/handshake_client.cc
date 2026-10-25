@@ -140,6 +140,13 @@ static bool ssl_write_client_cipher_list(const SSL_HANDSHAKE *hs, CBB *out,
     }
   }
 
+  // breq: 可选附加 TLS_EMPTY_RENEGOTIATION_INFO_SCSV（RFC 5746 §3.3）。
+  // 与上面的 FALLBACK_SCSV 一样放在列表末尾 —— 规范要求 SCSV 在最后。
+  if (hs->config->send_renegotiation_scsv &&
+      !CBB_add_u16(&child, SSL_CIPHER_EMPTY_RENEGOTIATION_INFO_SCSV)) {
+    return false;
+  }
+
   return CBB_flush(out);
 }
 

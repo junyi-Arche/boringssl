@@ -352,6 +352,29 @@ constexpr NamedGroup kNamedGroups[] = {
     {NID_X25519, SSL_GROUP_X25519, "X25519", "x25519"},
     {NID_X25519MLKEM768, SSL_GROUP_X25519_MLKEM768, "X25519MLKEM768", ""},
     {NID_ML_KEM_1024, SSL_GROUP_MLKEM1024, "MLKEM1024", ""},
+
+    // ---- breq 自定义：占位 group（算法未实现）----
+    //
+    // 目的：让 ClientHello 的 supported_groups 出现目标的曲线 ID
+    //       （browserleaks / peet.ws 都会记录这块）。
+    //
+    // 与 cipher 的占位不同，这里**不需要**额外的"默认不启用"机制：
+    //   - 加进 kNamedGroups 只让 SSL_CTX_set1_group_ids 认它
+    //   - 默认发的仍是 DefaultSupportedGroupIds()（不含占位）
+    //   - SSLKeyShare::Create 的 default 分支返回 nullptr
+    //     -> 服务端真选中时会干净报错（SSL_R_UNSUPPORTED_GROUP）
+    //
+    // ⚠️ 同时要把 internal.h 的 kNumNamedGroups 加一（它同时是
+    //    InplaceVector<UniquePtr<SSLKeyShare>, kNumNamedGroups> 的容量）。
+    {NID_undef, 30, "X448", "x448"},
+
+    // FFDHE 组（RFC 7919）。BoringSSL 没有实现有限域 DH，同样只做占位。
+    // 服务端若选中 -> SSLKeyShare::Create 返回 nullptr -> 握手失败。
+    {NID_undef, 256, "ffdhe2048", ""},
+    {NID_undef, 257, "ffdhe3072", ""},
+    {NID_undef, 258, "ffdhe4096", ""},
+    {NID_undef, 259, "ffdhe6144", ""},
+    {NID_undef, 260, "ffdhe8192", ""},
 };
 
 static_assert(std::size(kNamedGroups) == kNumNamedGroups,

@@ -3553,6 +3553,15 @@ OPENSSL_EXPORT SSL_CTX *SSL_set_SSL_CTX(SSL *ssl, SSL_CTX *ctx);
 OPENSSL_EXPORT int SSL_CTX_set_alpn_protos(SSL_CTX *ctx, const uint8_t *protos,
                                            size_t protos_len);
 
+// SSL_CTX_set_send_renegotiation_scsv, if |enable| is non-zero, appends
+// TLS_EMPTY_RENEGOTIATION_INFO_SCSV (0x00FF) to the end of the ClientHello
+// cipher_suites list (RFC 5746 section 3.3). Some clients signal support for
+// secure renegotiation via this SCSV instead of the renegotiation_info
+// extension, and fingerprinting tools (ja3/ja4) count it as a cipher.
+OPENSSL_EXPORT void SSL_CTX_set_send_renegotiation_scsv(SSL_CTX *ctx,
+                                                        int enable);
+OPENSSL_EXPORT void SSL_set_send_renegotiation_scsv(SSL *ssl, int enable);
+
 // SSL_set_alpn_protos sets the client ALPN protocol list on `ssl` to `protos`.
 // `protos` must be in wire-format (i.e. a series of non-empty, 8-bit
 // length-prefixed strings), or the empty string to disable ALPN. It returns

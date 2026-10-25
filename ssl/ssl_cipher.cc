@@ -77,6 +77,16 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_HANDSHAKE_MAC_SHA256
     },
     {
+        "DHE-RSA-AES128-SHA",
+        "TLS_DHE_RSA_WITH_AES_128_CBC_SHA",
+        0x0033,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
         TLS1_TXT_RSA_WITH_AES_256_SHA,
         "TLS_RSA_WITH_AES_256_CBC_SHA",
         SSL_CIPHER_RSA_WITH_AES_256_CBC_SHA,
@@ -93,6 +103,16 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_kECDHE,
         SSL_aECDSA,
         kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "DHE-RSA-AES256-SHA",
+        "TLS_DHE_RSA_WITH_AES_256_CBC_SHA",
+        0x0039,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,
         SSL_AEAD,
         SSL_HANDSHAKE_MAC_SHA256
     },
@@ -334,6 +354,16 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aRSA_SIGN,
         SSL_AES128,
         SSL_SHA256,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "ECDHE-RSA-AES256-SHA384",
+        "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384",
+        0xC028,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,
+        SSL_AEAD,
         SSL_HANDSHAKE_MAC_SHA256
     },
     {
@@ -1554,6 +1584,9 @@ bool ssl_create_cipher_list(UniquePtr<SSLCipherPreferenceList> *out_cipher_list,
       0xC0AF,
       // 占位 cipher（算法未实现，默认规则会跳过）
       0xCCAA,
+      0x0033,
+      0x0039,
+      0xC028,
   };
 
   // Set up a linked list of ciphers.

@@ -117,6 +117,42 @@ static const SSL_SIGNATURE_ALGORITHM kSignatureAlgorithms[] = {
     {SSL_SIGN_ML_DSA_87, EVP_PKEY_ML_DSA_87, NID_undef, nullptr,
      /*is_rsa_pss=*/false, /*tls12_ok=*/false, /*tls13_ok=*/true,
      /*client_only=*/false},
+    // =====================================================================
+    // breq 占位 sigalg（BoringSSL 未实现）
+    //
+    //   Ed448            0x0808
+    //   RSA-PSS-PSS      0x0809 / 0x080A / 0x080B
+    //   SHA-224 系列     0x0301 / 0x0302 / 0x0303
+    //   DSA              0x0402 / 0x0502 / 0x0602
+    //
+    // BoringSSL 把这些算法整体砍掉了。这里加占位只为让 ClientHello 的
+    // signature_algorithms 列表与目标指纹一致。
+    //
+    // 安全性：客户端默认**不会**用它们签名（除非显式启用客户端证书认证），
+    //        所以 pkey_type / md_func 用占位值不影响握手。服务端若选了
+    //        这些算法，只会影响「要求客户端证书」的场景 —— breq 不做那个。
+    // =====================================================================
+    {0x0808, EVP_PKEY_RSA, NID_undef, &EVP_sha512, /*is_rsa_pss=*/false,
+     /*tls12_ok=*/true, /*tls13_ok=*/true, /*client_only=*/false},
+    {0x0809, EVP_PKEY_RSA, NID_undef, &EVP_sha256, /*is_rsa_pss=*/true,
+     /*tls12_ok=*/true, /*tls13_ok=*/true, /*client_only=*/false},
+    {0x080A, EVP_PKEY_RSA, NID_undef, &EVP_sha384, /*is_rsa_pss=*/true,
+     /*tls12_ok=*/true, /*tls13_ok=*/true, /*client_only=*/false},
+    {0x080B, EVP_PKEY_RSA, NID_undef, &EVP_sha512, /*is_rsa_pss=*/true,
+     /*tls12_ok=*/true, /*tls13_ok=*/true, /*client_only=*/false},
+    {0x0301, EVP_PKEY_RSA, NID_undef, &EVP_sha256, /*is_rsa_pss=*/false,
+     /*tls12_ok=*/true, /*tls13_ok=*/false, /*client_only=*/false},
+    {0x0302, EVP_PKEY_RSA, NID_undef, &EVP_sha256, /*is_rsa_pss=*/false,
+     /*tls12_ok=*/true, /*tls13_ok=*/false, /*client_only=*/false},
+    {0x0303, EVP_PKEY_RSA, NID_undef, &EVP_sha256, /*is_rsa_pss=*/false,
+     /*tls12_ok=*/true, /*tls13_ok=*/false, /*client_only=*/false},
+    {0x0402, EVP_PKEY_RSA, NID_undef, &EVP_sha256, /*is_rsa_pss=*/false,
+     /*tls12_ok=*/true, /*tls13_ok=*/false, /*client_only=*/false},
+    {0x0502, EVP_PKEY_RSA, NID_undef, &EVP_sha384, /*is_rsa_pss=*/false,
+     /*tls12_ok=*/true, /*tls13_ok=*/false, /*client_only=*/false},
+    {0x0602, EVP_PKEY_RSA, NID_undef, &EVP_sha512, /*is_rsa_pss=*/false,
+     /*tls12_ok=*/true, /*tls13_ok=*/false, /*client_only=*/false},
+
 };
 
 static const SSL_SIGNATURE_ALGORITHM *get_signature_algorithm(uint16_t sigalg) {

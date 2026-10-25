@@ -952,7 +952,7 @@ struct NamedGroup {
 Span<const NamedGroup> NamedGroups();
 
 // kNumNamedGroups is the number of supported groups.
-constexpr size_t kNumNamedGroups = 6u;
+constexpr size_t kNumNamedGroups = 12u;  // breq: 6 原生 + 6 占位(X448 + 5 个 ffdhe)
 
 // DefaultSupportedGroupIds returns the list of IDs for the default groups that
 // are supported when the caller hasn't explicitly configured supported groups.
@@ -3490,6 +3490,13 @@ struct SSL_CONFIG {
   // format.
   Array<uint8_t> alpn_client_proto_list;
 
+  // send_renegotiation_scsv, if true, appends
+  // TLS_EMPTY_RENEGOTIATION_INFO_SCSV (0x00FF) to the end of the
+  // ClientHello cipher_suites list (RFC 5746 §3.3). breq-specific: used to
+  // replicate clients that signal secure renegotiation via SCSV instead of
+  // the renegotiation_info extension.
+  bool send_renegotiation_scsv = false;
+
   // alps_configs contains the list of supported protocols to use with ALPS,
   // along with their corresponding ALPS values.
   Vector<ALPSConfig> alps_configs;
@@ -4109,6 +4116,9 @@ class SSLContext : public ssl_ctx_st, public RefCounted<SSLContext> {
   // For a client, this contains the list of supported protocols in wire
   // format.
   Array<uint8_t> alpn_client_proto_list;
+
+  // See SSL_CONFIG::send_renegotiation_scsv.
+  bool send_renegotiation_scsv = false;
 
   // SRTP profiles we are willing to do from RFC 5764
   UniquePtr<STACK_OF(SRTP_PROTECTION_PROFILE)> srtp_profiles;
