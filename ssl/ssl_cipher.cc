@@ -35,10 +35,17 @@
 
 BSSL_NAMESPACE_BEGIN
 
-static constexpr SSL_CIPHER kCiphers[] = {
-    // The RSA ciphers
+// breq: 占位 cipher 的标记位。
+//
+// 用在 algorithm_enc 上，表示"这个套件只为复刻 ClientHello 的 cipher 列表
+// 而存在，算法并未实现"。两处依赖它：
+//   1. ssl_cipher_get_evp_aead() 对未知 algorithm_enc 返回 false
+//      -> 服务端真选中它时握手会干净报错，不会拿错算法继续跑。
+//   2. ssl_create_cipher_list() 的默认规则（"ALL"）跳过带此位的 cipher
+//      -> 不会污染不带指纹参数的普通请求。
+constexpr uint32_t kCustomCipherMarker = 0x80000000u;
 
-    // Cipher 0A
+static constexpr SSL_CIPHER kCiphers[] = {
     {
         SSL3_TXT_RSA_DES_192_CBC3_SHA,
         "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
@@ -47,13 +54,8 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aRSA_DECRYPT,
         SSL_3DES,
         SSL_SHA1,
-        SSL_HANDSHAKE_MAC_DEFAULT,
+        SSL_HANDSHAKE_MAC_DEFAULT
     },
-
-
-    // New AES ciphersuites
-
-    // Cipher 2F
     {
         TLS1_TXT_RSA_WITH_AES_128_SHA,
         "TLS_RSA_WITH_AES_128_CBC_SHA",
@@ -62,10 +64,18 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aRSA_DECRYPT,
         SSL_AES128,
         SSL_SHA1,
-        SSL_HANDSHAKE_MAC_DEFAULT,
+        SSL_HANDSHAKE_MAC_DEFAULT
     },
-
-    // Cipher 35
+    {
+        "DHE-DSS-AES128-CBC-SHA",
+        "TLS_DHE_DSS_WITH_AES_128_CBC_SHA",
+        0x0032,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
     {
         TLS1_TXT_RSA_WITH_AES_256_SHA,
         "TLS_RSA_WITH_AES_256_CBC_SHA",
@@ -74,12 +84,78 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aRSA_DECRYPT,
         SSL_AES256,
         SSL_SHA1,
-        SSL_HANDSHAKE_MAC_DEFAULT,
+        SSL_HANDSHAKE_MAC_DEFAULT
     },
-
-    // PSK cipher suites.
-
-    // Cipher 8C
+    {
+        "DHE-DSS-AES256-CBC-SHA",
+        "TLS_DHE_DSS_WITH_AES_256_CBC_SHA",
+        0x0038,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "RSA-AES128-CBC-SHA256",
+        "TLS_RSA_WITH_AES_128_CBC_SHA256",
+        0x003C,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "RSA-AES256-CBC-SHA256",
+        "TLS_RSA_WITH_AES_256_CBC_SHA256",
+        0x003D,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "DHE-DSS-AES128-CBC-SHA256",
+        "TLS_DHE_DSS_WITH_AES_128_CBC_SHA256",
+        0x0040,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "DHE-RSA-AES128-CBC-SHA256",
+        "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256",
+        0x0067,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "DHE-DSS-AES256-CBC-SHA256",
+        "TLS_DHE_DSS_WITH_AES_256_CBC_SHA256",
+        0x006A,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "DHE-RSA-AES256-CBC-SHA256",
+        "TLS_DHE_RSA_WITH_AES_256_CBC_SHA256",
+        0x006B,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
     {
         TLS1_TXT_PSK_WITH_AES_128_CBC_SHA,
         "TLS_PSK_WITH_AES_128_CBC_SHA",
@@ -88,10 +164,8 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aPSK,
         SSL_AES128,
         SSL_SHA1,
-        SSL_HANDSHAKE_MAC_DEFAULT,
+        SSL_HANDSHAKE_MAC_DEFAULT
     },
-
-    // Cipher 8D
     {
         TLS1_TXT_PSK_WITH_AES_256_CBC_SHA,
         "TLS_PSK_WITH_AES_256_CBC_SHA",
@@ -100,12 +174,8 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aPSK,
         SSL_AES256,
         SSL_SHA1,
-        SSL_HANDSHAKE_MAC_DEFAULT,
+        SSL_HANDSHAKE_MAC_DEFAULT
     },
-
-    // GCM ciphersuites from RFC 5288
-
-    // Cipher 9C
     {
         TLS1_TXT_RSA_WITH_AES_128_GCM_SHA256,
         "TLS_RSA_WITH_AES_128_GCM_SHA256",
@@ -114,10 +184,8 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aRSA_DECRYPT,
         SSL_AES128GCM,
         SSL_AEAD,
-        SSL_HANDSHAKE_MAC_SHA256,
+        SSL_HANDSHAKE_MAC_SHA256
     },
-
-    // Cipher 9D
     {
         TLS1_TXT_RSA_WITH_AES_256_GCM_SHA384,
         "TLS_RSA_WITH_AES_256_GCM_SHA384",
@@ -126,12 +194,48 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aRSA_DECRYPT,
         SSL_AES256GCM,
         SSL_AEAD,
-        SSL_HANDSHAKE_MAC_SHA384,
+        SSL_HANDSHAKE_MAC_SHA384
     },
-
-    // TLS 1.3 suites.
-
-    // Cipher 1301
+    {
+        "DHE-RSA-AES128-GCM-SHA256",
+        "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256",
+        0x009E,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "DHE-RSA-AES256-GCM-SHA384",
+        "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
+        0x009F,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "DHE-DSS-AES128-GCM-SHA256",
+        "TLS_DHE_DSS_WITH_AES_128_GCM_SHA256",
+        0x00A2,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "DHE-DSS-AES256-GCM-SHA384",
+        "TLS_DHE_DSS_WITH_AES_256_GCM_SHA384",
+        0x00A3,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
     {
         TLS1_3_RFC_AES_128_GCM_SHA256,
         "TLS_AES_128_GCM_SHA256",
@@ -140,10 +244,8 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aGENERIC,
         SSL_AES128GCM,
         SSL_AEAD,
-        SSL_HANDSHAKE_MAC_SHA256,
+        SSL_HANDSHAKE_MAC_SHA256
     },
-
-    // Cipher 1302
     {
         TLS1_3_RFC_AES_256_GCM_SHA384,
         "TLS_AES_256_GCM_SHA384",
@@ -152,10 +254,8 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aGENERIC,
         SSL_AES256GCM,
         SSL_AEAD,
-        SSL_HANDSHAKE_MAC_SHA384,
+        SSL_HANDSHAKE_MAC_SHA384
     },
-
-    // Cipher 1303
     {
         TLS1_3_RFC_CHACHA20_POLY1305_SHA256,
         "TLS_CHACHA20_POLY1305_SHA256",
@@ -164,10 +264,8 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aGENERIC,
         SSL_CHACHA20POLY1305,
         SSL_AEAD,
-        SSL_HANDSHAKE_MAC_SHA256,
+        SSL_HANDSHAKE_MAC_SHA256
     },
-
-    // Cipher C009
     {
         TLS1_TXT_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
         "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
@@ -176,10 +274,8 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aECDSA,
         SSL_AES128,
         SSL_SHA1,
-        SSL_HANDSHAKE_MAC_DEFAULT,
+        SSL_HANDSHAKE_MAC_DEFAULT
     },
-
-    // Cipher C00A
     {
         TLS1_TXT_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
         "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
@@ -188,10 +284,8 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aECDSA,
         SSL_AES256,
         SSL_SHA1,
-        SSL_HANDSHAKE_MAC_DEFAULT,
+        SSL_HANDSHAKE_MAC_DEFAULT
     },
-
-    // Cipher C013
     {
         TLS1_TXT_ECDHE_RSA_WITH_AES_128_CBC_SHA,
         "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
@@ -200,10 +294,8 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aRSA_SIGN,
         SSL_AES128,
         SSL_SHA1,
-        SSL_HANDSHAKE_MAC_DEFAULT,
+        SSL_HANDSHAKE_MAC_DEFAULT
     },
-
-    // Cipher C014
     {
         TLS1_TXT_ECDHE_RSA_WITH_AES_256_CBC_SHA,
         "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
@@ -212,12 +304,8 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aRSA_SIGN,
         SSL_AES256,
         SSL_SHA1,
-        SSL_HANDSHAKE_MAC_DEFAULT,
+        SSL_HANDSHAKE_MAC_DEFAULT
     },
-
-    // HMAC based TLS v1.2 ciphersuites from RFC5289
-
-    // Cipher C023 (deprecated)
     {
         TLS1_TXT_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
         "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256",
@@ -226,10 +314,18 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aECDSA,
         SSL_AES128,
         SSL_SHA256,
-        SSL_HANDSHAKE_MAC_SHA256,
+        SSL_HANDSHAKE_MAC_SHA256
     },
-
-    // Cipher C027 (deprecated)
+    {
+        "ECDHE-ECDSA-AES256-CBC-SHA384",
+        "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384",
+        0xC024,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
     {
         TLS1_TXT_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
         "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
@@ -238,12 +334,8 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aRSA_SIGN,
         SSL_AES128,
         SSL_SHA256,
-        SSL_HANDSHAKE_MAC_SHA256,
+        SSL_HANDSHAKE_MAC_SHA256
     },
-
-    // GCM based TLS v1.2 ciphersuites from RFC 5289
-
-    // Cipher C02B
     {
         TLS1_TXT_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
         "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
@@ -252,10 +344,8 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aECDSA,
         SSL_AES128GCM,
         SSL_AEAD,
-        SSL_HANDSHAKE_MAC_SHA256,
+        SSL_HANDSHAKE_MAC_SHA256
     },
-
-    // Cipher C02C
     {
         TLS1_TXT_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
         "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
@@ -264,10 +354,8 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aECDSA,
         SSL_AES256GCM,
         SSL_AEAD,
-        SSL_HANDSHAKE_MAC_SHA384,
+        SSL_HANDSHAKE_MAC_SHA384
     },
-
-    // Cipher C02F
     {
         TLS1_TXT_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
         "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
@@ -276,10 +364,8 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aRSA_SIGN,
         SSL_AES128GCM,
         SSL_AEAD,
-        SSL_HANDSHAKE_MAC_SHA256,
+        SSL_HANDSHAKE_MAC_SHA256
     },
-
-    // Cipher C030
     {
         TLS1_TXT_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
         "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
@@ -288,12 +374,8 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aRSA_SIGN,
         SSL_AES256GCM,
         SSL_AEAD,
-        SSL_HANDSHAKE_MAC_SHA384,
+        SSL_HANDSHAKE_MAC_SHA384
     },
-
-    // ECDHE-PSK cipher suites.
-
-    // Cipher C035
     {
         TLS1_TXT_ECDHE_PSK_WITH_AES_128_CBC_SHA,
         "TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA",
@@ -302,10 +384,8 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aPSK,
         SSL_AES128,
         SSL_SHA1,
-        SSL_HANDSHAKE_MAC_DEFAULT,
+        SSL_HANDSHAKE_MAC_DEFAULT
     },
-
-    // Cipher C036
     {
         TLS1_TXT_ECDHE_PSK_WITH_AES_256_CBC_SHA,
         "TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA",
@@ -314,12 +394,228 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aPSK,
         SSL_AES256,
         SSL_SHA1,
-        SSL_HANDSHAKE_MAC_DEFAULT,
+        SSL_HANDSHAKE_MAC_DEFAULT
     },
-
-    // ChaCha20-Poly1305 cipher suites.
-
-    // Cipher CCA8
+    {
+        "RSA-ARIA128-GCM-SHA256",
+        "TLS_RSA_WITH_ARIA_128_GCM_SHA256",
+        0xC050,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "RSA-ARIA256-GCM-SHA384",
+        "TLS_RSA_WITH_ARIA_256_GCM_SHA384",
+        0xC051,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "DHE-RSA-ARIA128-GCM-SHA256",
+        "TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256",
+        0xC052,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "DHE-RSA-ARIA256-GCM-SHA384",
+        "TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384",
+        0xC053,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "DHE-DSS-ARIA128-GCM-SHA256",
+        "TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256",
+        0xC056,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "DHE-DSS-ARIA256-GCM-SHA384",
+        "TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384",
+        0xC057,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "ECDHE-ECDSA-ARIA128-GCM-SHA256",
+        "TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256",
+        0xC05C,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "ECDHE-ECDSA-ARIA256-GCM-SHA384",
+        "TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384",
+        0xC05D,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA384
+    },
+    {
+        "ECDHE-RSA-ARIA128-GCM-SHA256",
+        "TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256",
+        0xC060,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "ECDHE-RSA-ARIA256-GCM-SHA384",
+        "TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384",
+        0xC061,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "RSA-AES128-CCM",
+        "TLS_RSA_WITH_AES_128_CCM",
+        0xC09C,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "RSA-AES256-CCM",
+        "TLS_RSA_WITH_AES_256_CCM",
+        0xC09D,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "DHE-RSA-AES128-CCM",
+        "TLS_DHE_RSA_WITH_AES_128_CCM",
+        0xC09E,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "DHE-RSA-AES256-CCM",
+        "TLS_DHE_RSA_WITH_AES_256_CCM",
+        0xC09F,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "RSA-AES128-CCM8",
+        "TLS_RSA_WITH_AES_128_CCM_8",
+        0xC0A0,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "RSA-AES256-CCM8",
+        "TLS_RSA_WITH_AES_256_CCM_8",
+        0xC0A1,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "DHE-RSA-AES128-CCM8",
+        "TLS_DHE_RSA_WITH_AES_128_CCM_8",
+        0xC0A2,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "DHE-RSA-AES256-CCM8",
+        "TLS_DHE_RSA_WITH_AES_256_CCM_8",
+        0xC0A3,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "ECDHE-ECDSA-AES128-CCM",
+        "TLS_ECDHE_ECDSA_WITH_AES_128_CCM",
+        0xC0AC,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "ECDHE-ECDSA-AES256-CCM",
+        "TLS_ECDHE_ECDSA_WITH_AES_256_CCM",
+        0xC0AD,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "ECDHE-ECDSA-AES128-CCM8",
+        "TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8",
+        0xC0AE,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
+    {
+        "ECDHE-ECDSA-AES256-CCM8",
+        "TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8",
+        0xC0AF,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
     {
         TLS1_TXT_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
         "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
@@ -328,10 +624,8 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aRSA_SIGN,
         SSL_CHACHA20POLY1305,
         SSL_AEAD,
-        SSL_HANDSHAKE_MAC_SHA256,
+        SSL_HANDSHAKE_MAC_SHA256
     },
-
-    // Cipher CCA9
     {
         TLS1_TXT_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
         "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
@@ -340,10 +634,18 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aECDSA,
         SSL_CHACHA20POLY1305,
         SSL_AEAD,
-        SSL_HANDSHAKE_MAC_SHA256,
+        SSL_HANDSHAKE_MAC_SHA256
     },
-
-    // Cipher CCAB
+    {
+        "DHE-RSA-CHACHA20-POLY1305-SHA256",
+        "TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+        0xCCAA,
+        SSL_kECDHE,
+        SSL_aECDSA,
+        kCustomCipherMarker,  // 未实现的算法标记
+        SSL_AEAD,
+        SSL_HANDSHAKE_MAC_SHA256
+    },
     {
         TLS1_TXT_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256,
         "TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256",
@@ -352,7 +654,7 @@ static constexpr SSL_CIPHER kCiphers[] = {
         SSL_aPSK,
         SSL_CHACHA20POLY1305,
         SSL_AEAD,
-        SSL_HANDSHAKE_MAC_SHA256,
+        SSL_HANDSHAKE_MAC_SHA256
     },
 
 };
@@ -1176,6 +1478,82 @@ bool ssl_create_cipher_list(UniquePtr<SSLCipherPreferenceList> *out_cipher_list,
       SSL_CIPHER_RSA_WITH_AES_256_CBC_SHA,
       SSL_CIPHER_PSK_WITH_AES_256_CBC_SHA,
       SSL_CIPHER_RSA_WITH_3DES_EDE_CBC_SHA,
+
+      // 占位 cipher：必须出现在三个列表之一，否则下面的
+      // static_assert(size(co_list)+TLS13 == size(kCiphers)) 失败。
+      // 它在这里只为"凑数"——真正的启用控制见 ssl_create_cipher_list
+      // 里对 kCustomCipherMarker 的排除。
+      0xC05D,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0x0032,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0x0038,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0x003C,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0x003D,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0x0040,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0x0067,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0x006A,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0x006B,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0x009E,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0x009F,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0x00A2,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0x00A3,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC024,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC050,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC051,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC052,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC053,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC056,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC057,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC05C,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC060,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC061,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC09C,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC09D,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC09E,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC09F,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC0A0,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC0A1,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC0A2,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC0A3,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC0AC,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC0AD,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC0AE,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xC0AF,
+      // 占位 cipher（算法未实现，默认规则会跳过）
+      0xCCAA,
   };
 
   // Set up a linked list of ciphers.
@@ -1251,7 +1629,24 @@ bool ssl_create_cipher_list(UniquePtr<SSLCipherPreferenceList> *out_cipher_list,
   // The cipher selection for the list is done. The ciphers are added
   // to the resulting precedence to the STACK_OF(SSL_CIPHER).
   size_t num_in_group_flags = 0;
+
+  // breq: 默认规则（SSL_DEFAULT_CIPHER_LIST == "ALL"）**不启用**占位 cipher。
+  //
+  // 为什么需要这一步：占位 cipher 为了通过 static_assert 必须进
+  // kAESCiphers/kChaChaCiphers/kLegacyCiphers，而进列表后 "ALL" 规则会把
+  // 它们激活 —— 结果所有**不带指纹参数**的普通请求，ClientHello 都会多出
+  // 这些假套件（实测 ja4 从 t13d1711h2 变成 t13d1811h2）。
+  //
+  // 这里只对默认规则排除：用户用 set_strict_cipher_list 显式列出名字时，
+  // 走的是精确匹配分支，仍然能启用它们（这正是我们要的效果）。
+  const bool is_default_cipher_rule =
+      strcmp(rule_p, SSL_DEFAULT_CIPHER_LIST) == 0;
+
   for (CIPHER_ORDER *curr = head; curr != nullptr; curr = curr->next) {
+    if (is_default_cipher_rule &&
+        (curr->cipher->algorithm_enc & kCustomCipherMarker) != 0) {
+      continue;  // 占位 cipher 不进默认列表
+    }
     if (curr->active) {
       if (!sk_SSL_CIPHER_push(cipherstack.get(), curr->cipher)) {
         return false;
